@@ -1,6 +1,8 @@
 const request = require("request");
-
 const cheerio = require('cheerio');
+const path = require('path');
+const fs = require('fs');
+const xlsx = require('xlsx');
 function scoreDetails(url){
     // console.log("Link from score card: ",url);
     // we have a url from score card from all match 
@@ -20,59 +22,54 @@ function cb(err,res,body){
 function getScore(html){
     let selecTool = cheerio.load(html);
 //1: venue of the match
-    // let venueData = selecTool('.ds-flex.ds-justify-between.ds-items-center>.ds-truncate')
-    // console.log('venueData: ', venueData);
+
     let venue = selecTool('div[class="ds-text-tight-m ds-font-regular ds-text-typo-mid3"]')
-    console.log('venue: ', venue.text());
+    let venueOfMatch =  selecTool(venue).text();
+    // console.log('venueOfMatch: ', venueOfMatch);
+
 2//teams
-    let teams1 = selecTool('[class="ci-team-score ds-flex ds-justify-between ds-items-center ds-text-typo ds-opacity-50 ds-mb-2"]');
-    console.log('teams1: ', teams1.text());
-    let teams2 = selecTool('[class="ci-team-score ds-flex ds-justify-between ds-items-center ds-text-typo ds-mb-2"]');
-    console.log('teams1: ', teams2.text());
+    let team = selecTool('[class="ds-flex ds-flex-col ds-mt-3 md:ds-mt-0 ds-mt-0 ds-mb-1"] [class="ds-flex ds-items-center ds-min-w-0 ds-mr-1"]');
+    let ownTeam =  selecTool(team[0]).text();
+    let oponentTeam =  selecTool(team[1]).text();
+
+    console.log('ownTeam: ',ownTeam);
+    console.log('oponentTeam: ', oponentTeam);
+
 3// winners
     let winners = selecTool('[class="ds-text-tight-m ds-font-regular ds-truncate ds-text-typo"]');
-    console.log('winners: ', winners.text());
-4// Score Details
-    let scores = selecTool('.ds-w-full.ds-table.ds-table-md.ds-table-auto.ci-scorecard-table tbody>tr')
-    // console.log('Batting Details: ', scores.html());
-    for (let i = 0; i < scores.length; i++) {
-        let allcolums = selecTool(scores[i]).find("td");        
-        console.log(i,'allcolums: ', allcolums.text());
-        if(selecTool(selecTool(allcolums[i]).find('span')[0]).hasClass("ds-table-row-compact-bottom ds-border-none")){
-            console.log('wickets ');
+    // console.log('winners: ', winners.text());
+    let winnersOfMatch =  selecTool(winners).text();
+
+4// Batting data
+
+/*
+    let batsmanData = selecTool('[class="ds-w-0 ds-whitespace-nowrap ds-min-w-max ds-flex ds-items-center"]')
+    for (let i = 0; i < batsmanData.length; i++) {
+        let allcolums = selecTool(batsmanData[i]).find("td>a>span");        
+        if(i<=5){
+            // console.log(i,' Player of Team 1: ', allcolums.text());
+        }
+        if(i<=20 && i>5){
+            // console.log(i,' Player Team 2: ', allcolums.text());
         }
     }
-5// Batting data
-    let batsmanData = selecTool('[class="ds-w-0 ds-whitespace-nowrap ds-min-w-max ds-flex ds-items-center"]')
-    // console.log('batsmanData: ', batsmanData.text());
-        for (let i = 0; i < batsmanData.length; i++) {
-            let allcolums = selecTool(batsmanData[i]).find("td>a>span");        
-            // console.log(i,'allcolums: ', allcolums.text());
-            if(i<=5){
-                console.log(i,' Player of Team 1: ', allcolums.text());
-            }
-            if(i<=20 && i>5){
-                console.log(i,' Player Team 2: ', allcolums.text());
-            }
-        }
-//6 not out
+//5 not out
     let noutOut = selecTool('[class="ds-w-0 ds-whitespace-nowrap ds-min-w-max ds-flex ds-items-center ds-border-line-primary ci-scorecard-player-notout"]')
-    // console.log('noutOut: ', noutOut.text());
     for (let i = 0; i < noutOut.length; i++) {
         let noutOutP = selecTool(noutOut[i]).find("td>a>span");        
         if(i<=1){
-            console.log('noutOut Player Team 1: ', noutOutP.text());
+            let notOutPlayers = selecTool( noutOutP).text();
+
         }
         if(i<=3 && i>1){
-            console.log('noutOut Player Team 2: ', noutOutP.text());
+            // console.log('noutOut Player Team 2: ', noutOutP.text());
+            let notOutPlayers = selecTool( noutOutP).text();
+
         }
     }
-//7 Not Play in match
-    let notPlay = selecTool('[class="!ds-py-2"]')
-    console.log( notPlay.text());
-//8 fall of wickets
+
+//6 fall of wickets
     let fallOfWickets = selecTool('[class="ds-text-tight-s ds-font-regular ds-leading-4"]')
-    // console.log('fallOfWickets: ', fallOfWickets.text());
     for (let i = 0; i < fallOfWickets.length; i++) {
         let wickets = selecTool(fallOfWickets[i]).find("div>span");        
         if(i== 0){
@@ -81,10 +78,87 @@ function getScore(html){
         if(i == 1){
                 // console.log('wickets of Team 2: ', wickets.text());
         }
-       
+
+    }
+*/
+4// Score Details
+    let batsMan = selecTool('.ds-w-full.ds-table.ds-table-md.ds-table-auto.ci-scorecard-table tbody')
+    // console.log('Batting Details: ', scores.html());
+    let htmlString = "";
+    for (let i = 0; i < batsMan.length; i++) {
+        htmlString = htmlString + selecTool(batsMan[i]).html();
+        let allRow = selecTool(batsMan[i]).find('tr')
+        for (let i = 0; i < allRow.length; i++) {
+            // console.log('element: ', selecTool( allRow[i]).text());
+            let rows = selecTool(allRow[i]);
+            let firstColums = rows.find('td')[0];
+            if(selecTool(firstColums).hasClass('ds-w-0 ds-whitespace-nowrap ds-min-w-max ds-flex ds-items-center')){
+                // name | runs | bals | 4 's| 6's | sr
+                
+
+                let playesName = selecTool(rows.find('td')[0]).text().trim();
+                let wicketTaker = selecTool(rows.find('td')[1]).text();
+                let runs = selecTool(rows.find('td')[2]).text();
+                let balls = selecTool(rows.find('td')[3]).text();
+                // let M = selecTool(rows.find('td')[4]).text();
+                let noOf4 = selecTool(rows.find('td')[5]).text();
+                let noOf6 = selecTool(rows.find('td')[6]).text();
+                let sr = selecTool(rows.find('td')[7]).text();
+                //console
+                // console.table(`PlayerName: ${playesName} |runs: ${runs} |balls: ${balls} |4's: ${noOf4} |6's: ${noOf6} |stricRate: ${sr}`);
+                
+                //Wicket Taker
+                // console.log(`wicket Taker: ${wicketTaker}`);
+                
+                /*
+                for (let i = 0; i< 8; i++) {
+                    if(i == 1 ||  i == 4) continue;
+                    else{
+                        console.log(selecTool(rows.find('td')[i]).text());
+                    }
+                }
+                */
+                extractInfo(ownTeam,oponentTeam ,playesName,runs,balls,noOf4,noOf6,sr ,venueOfMatch,winnersOfMatch)
+            }
+            
+        }
+    }
+    
+    function extractInfo(ownTeam,oponentTeam ,playesName,runs,balls,noOf4,noOf6,sr ,venueOfMatch,winnersOfMatch ) {
+        let teamNamePath = path.join(__dirname,'TataIPL',ownTeam);
+            if(!fs.existsSync(teamNamePath)){
+                fs.mkdirSync(teamNamePath);
+            }
+        let playerPath = path.join(teamNamePath,playesName + '.xlsx');
+        let content = excelReader(playerPath,playesName)
+        let infoVarObj = {ownTeam,oponentTeam ,playesName,runs,balls,noOf4,noOf6,sr ,venueOfMatch,winnersOfMatch};//objrct
+        content.push(infoVarObj);
+        excelWriter(playerPath, content , playesName);
+
     }
 }
+// read the data from excel file
+function excelReader(playerPath,sheetName) {
+    //if playe path not exits
+    if (!fs.existsSync(playerPath)) {
+        return[];
+    }
 
+    // if player path exist  and having some data
+    let workBook = xlsx.readFile(playerPath);
+    let exceData = workBook.Sheets[sheetName];
+    let playerObj = xlsx.utils.sheet_to_json(exceData);
+    return playerObj;
+ 
+}
+function excelWriter(playerPath ,jsObject , sheetName) {
+    //create new workbook
+    let newWorkBook = xlsx.utils.book_new();
+    // create one sheet in workbook
+    let newWorkSheet = xlsx.utils.json_to_sheet(jsObject);
+    xlsx.utils.book_append_sheet(newWorkBook , newWorkSheet , sheetName);
+    xlsx.writeFile(newWorkBook,playerPath);
+}
 module.exports = {
     scoreCard : scoreDetails
 }

@@ -25,13 +25,14 @@ function handleHtml(html){
 
     // console.log('allMatchEle: ', allMatchEle.text());
 
-    for(let i =88 ; i<= allMatchEle.length-1 ; i++ ){
+    for(let i =68 ; i<= allMatchEle.length-1 ; i++ ){
         let allMatchLink = selecTool(allMatchEle[i]).attr('href')
         // console.log('allMatchLink: ',i,": ", allMatchLink);
         let fullLink = "https://www.espncricinfo.com" + allMatchLink;
         // console.log('fullLink: ',i, fullLink);
+        // if(fullLink[i] == fullLink[i+1]) return;
         scoreCard.scoreCard(fullLink)
-        break;
+        // break;
     }
 
 }
