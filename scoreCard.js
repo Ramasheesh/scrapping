@@ -147,6 +147,7 @@ function excelReader(playerPath,sheetName) {
     // if player path exist  and having some data
     let workBook = xlsx.readFile(playerPath);
     let exceData = workBook.Sheets[sheetName];
+    // A dictionary of the worksheets in the workbook. Use SheetNames to reference these.
     let playerObj = xlsx.utils.sheet_to_json(exceData);
     return playerObj;
  
@@ -154,9 +155,11 @@ function excelReader(playerPath,sheetName) {
 function excelWriter(playerPath ,jsObject , sheetName) {
     //create new workbook
     let newWorkBook = xlsx.utils.book_new();
-    // create one sheet in workbook
+    // create one sheet in workbook and convert json to sheet
     let newWorkSheet = xlsx.utils.json_to_sheet(jsObject);
+    //Append a worksheet to a workbook
     xlsx.utils.book_append_sheet(newWorkBook , newWorkSheet , sheetName);
+    // Attempts to write workbook data to file
     xlsx.writeFile(newWorkBook,playerPath);
 }
 module.exports = {
